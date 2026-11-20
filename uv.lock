@@ -143,6 +143,10 @@ dependencies = [
     { name = "python-documentcloud" },
     { name = "python-squarelet" },
     { name = "requests" },
+]
+
+[package.dev-dependencies]
+dev = [
     { name = "ruff" },
 ]
 
@@ -151,8 +155,10 @@ requires-dist = [
     { name = "python-documentcloud", specifier = "==4.8.1" },
     { name = "python-squarelet", specifier = "==0.6.0" },
     { name = "requests" },
-    { name = "ruff", specifier = ">=0.17.6" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ruff", specifier = ">=0.17.6" }]
 
 [[package]]
 name = "future"

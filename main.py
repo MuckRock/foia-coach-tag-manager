@@ -4,8 +4,9 @@ import collections
 import csv
 
 from documentcloud.addon import AddOn
+from documentcloud.exceptions import DoesNotExistError
 
-from tags import TYPE_KEY, UNRESOLVED, resolve
+from tags import TYPE_KEY, DocType, Status, as_email_policy, resolve
 
 REPORT = "tag-report.csv"
 
@@ -16,7 +17,9 @@ class TagManager(AddOn):
             {"User-Agent": "FOIA Coach Tag Manager (MuckRock DocumentCloud Add-On)"}
         )
         apply = self.data.get("apply", False)
-        default = self.data.get("untagged_type") or None
+        default = self.data.get("untagged_type")
+        default = DocType(default) if default else None
+        find_email = self.data.get("find_email_policies", False)
 
         self.set_message("Checking tags…")
         counts = collections.Counter()
@@ -27,6 +30,8 @@ class TagManager(AddOn):
             )
             for doc in self.get_documents():
                 result = resolve(doc.data, default)
+                if find_email and result.new == DocType.SCHEDULE:
+                    result = as_email_policy(result, page_text(doc))
                 counts[result.status] += 1
                 if result.changes and apply:
                     self.set_type(doc.id, result.new)
@@ -44,7 +49,9 @@ class TagManager(AddOn):
             self.upload_file(report)
 
         summary = ", ".join(f"{n} {status}" for status, n in sorted(counts.items()))
-        changed = sum(n for s, n in counts.items() if s not in ("ok", UNRESOLVED))
+        changed = sum(
+            n for s, n in counts.items() if s not in (Status.OK, Status.UNRESOLVED)
+        )
         verb = "Updated" if apply else "Would update"
         self.set_message(f"{verb} {changed} documents ({summary}). See {REPORT}.")
 
@@ -53,6 +60,15 @@ class TagManager(AddOn):
         self.client.put(
             f"documents/{doc_id}/data/{TYPE_KEY}/", json={"values": [value]}
         )
+
+
+def page_text(doc):
+    """All of a document's page text, joined as the services importers join it; None if it has none."""
+    try:
+        pages = doc.get_json_text().get("pages", [])
+    except DoesNotExistError:
+        return None
+    return "\n".join(p["contents"] for p in pages)
 
 
 if __name__ == "__main__":

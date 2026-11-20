@@ -1,7 +1,7 @@
 title: FOIA Coach Tag Manager
 description: >-
   Sets each document's `Type` tag to one of the FOIA Coach standard values:
-  Retention Schedule, Guide, Court Opinion, Administrative Opinion, Records Log,
+  Retention Schedule, Email Retention Policy, Guide, Court Opinion, Administrative Opinion, Records Log,
   Request or Other. Old spellings such as "Retention Schedules" or "AG Opinion" are
   renamed, and a missing `Type` is filled from `_tag` or `Tags` when they agree.
   Anything it can't map is reported, never guessed.
@@ -19,6 +19,13 @@ properties:
     description: Leave unchecked to only produce a report of what would change.
     type: boolean
     default: false
+  find_email_policies:
+    title: Find email retention policies
+    description: >-
+      Reads the text of each retention schedule and retags it `Email Retention Policy` if
+      it reads as one. Slower, since it fetches every schedule's text.
+    type: boolean
+    default: false
   untagged_type:
     title: Type for untagged documents
     description: >-
@@ -27,6 +34,7 @@ properties:
     type: string
     enum:
       - Retention Schedule
+      - Email Retention Policy
       - Guide
       - Court Opinion
       - Administrative Opinion
