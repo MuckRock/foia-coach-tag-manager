@@ -1,41 +1,59 @@
-"""
-This is a hello world add-on for DocumentCloud.
+"""Standardize the `Type` tag on FOIA Coach source documents in DocumentCloud."""
 
-It demonstrates how to write a add-on which can be activated from the
-DocumentCloud add-on system and run using Github Actions.  It receives data
-from DocumentCloud via the request dispatch and writes data back to
-DocumentCloud using the standard API
-"""
+import collections
+import csv
 
 from documentcloud.addon import AddOn
 
+from tags import TYPE_KEY, UNRESOLVED, resolve
 
-class HelloWorld(AddOn):
-    """An example Add-On for DocumentCloud."""
+REPORT = "tag-report.csv"
 
+
+class TagManager(AddOn):
     def main(self):
-        """The main add-on functionality goes here."""
-        # Add a custom user agent here to positively identify yourself 
-        self.client.session.headers.update({'User-Agent': 'Hello World Add-On'})
+        self.client.session.headers.update(
+            {"User-Agent": "FOIA Coach Tag Manager (MuckRock DocumentCloud Add-On)"}
+        )
+        apply = self.data.get("apply", False)
+        default = self.data.get("untagged_type") or None
 
-        # fetch your add-on specific data
-        name = self.data.get("name", "world")
+        self.set_message("Checking tags…")
+        counts = collections.Counter()
+        with open(REPORT, "w+", newline="") as report:
+            writer = csv.writer(report)
+            writer.writerow(
+                ["id", "title", "url", "status", "current Type", "new Type", "note"]
+            )
+            for doc in self.get_documents():
+                result = resolve(doc.data, default)
+                counts[result.status] += 1
+                if result.changes and apply:
+                    self.set_type(doc.id, result.new)
+                writer.writerow(
+                    [
+                        doc.id,
+                        doc.title,
+                        doc.canonical_url,
+                        result.status,
+                        "; ".join(result.current),
+                        result.new or "",
+                        result.reason,
+                    ]
+                )
+            self.upload_file(report)
 
-        self.set_message("Hello World start!")
+        summary = ", ".join(f"{n} {status}" for status, n in sorted(counts.items()))
+        changed = sum(n for s, n in counts.items() if s not in ("ok", UNRESOLVED))
+        verb = "Updated" if apply else "Would update"
+        self.set_message(f"{verb} {changed} documents ({summary}). See {REPORT}.")
 
-        # add a hello note to the first page of each selected document
-        for document in self.get_documents():
-            # get_documents will iterate through all documents efficiently,
-            # either selected or by query, dependeing on which is passed in
-            document.annotations.create(f"Hello {name}!", 0)
-
-        with open("hello.txt", "w+") as file_:
-            file_.write("Hello world!")
-            self.upload_file(file_)
-
-        self.set_message("Hello World end!")
-        self.send_mail("Hello World!", "We finished!")
+    def set_type(self, doc_id, value):
+        """Replace only the `Type` key, leaving the document's other data untouched."""
+        self.client.put(
+            f"documents/{doc_id}/data/{TYPE_KEY}/", json={"values": [value]}
+        )
 
 
 if __name__ == "__main__":
-    HelloWorld().main()
+    TagManager().main()

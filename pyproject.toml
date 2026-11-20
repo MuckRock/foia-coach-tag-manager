@@ -1,0 +1,15 @@
+[project]
+name = "foia-coach-tag-manager"
+version = "0.1.0"
+description = "DocumentCloud Add-On: FOIA Coach Tag Manager"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "python-documentcloud==4.8.1",
+    "python-squarelet==0.6.0",
+    "requests",
+    "ruff>=0.17.6",
+]
+
+[tool.uv]
+package = false

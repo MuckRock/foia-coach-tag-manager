@@ -1,3 +1,15 @@
+certifi==2026.10.23
+charset-normalizer==3.5.2
+fastjsonschema==2.22.3
+future==1.0.0
+idna==3.20
+listcrunch==1.0.1
+python-dateutil==4.0.0
 python-documentcloud==4.8.1
 python-squarelet==0.6.0
-requests
+pyyaml==6.0.3
+ratelimit==2.2.1
+requests==2.34.2
+token-bucket==0.4.0
+tzdata==2026.6
+urllib3==2.8.0

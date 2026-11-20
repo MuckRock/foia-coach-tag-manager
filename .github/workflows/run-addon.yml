@@ -1,6 +1,7 @@
 
 name: Run Add-On
-on: repository_dispatch
+on:
+  repository_dispatch:
 
 jobs:
   Run-Add-On:
